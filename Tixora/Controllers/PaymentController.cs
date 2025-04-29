@@ -1,11 +1,24 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Stripe;
 using Stripe.Checkout;
+using Stripe.V2;
+using System.Threading.Tasks;
+using Tixora.Models;
 
 namespace Tixora.Controllers
 {
     public class PaymentController : Controller
     {
+        private IConfiguration _config;
+        private readonly AppDbContext _context;
+
+        public PaymentController(IConfiguration config, AppDbContext context)
+        {
+            _config = config;
+            _context = context;
+
+            StripeConfiguration.ApiKey = _config["Stripe:SecretKey"];
+        }
         public IActionResult Index()
         {
             return View();
@@ -94,8 +107,20 @@ namespace Tixora.Controllers
         //        };
 
         //    }
-        public ActionResult CreateCheckoutSession()
+        [HttpPost]
+        public async Task<ActionResult> CreateCheckoutSession(int bookingId)
         {
+            var booking = _context.Bookings.Find(bookingId);
+            if (booking == null)
+            {
+                return NotFound("Booking not found.");
+            }
+            var eventDetails = _context.Events.Find(booking.EventId);
+            if (eventDetails == null)
+            {
+                return NotFound("Event not found.");
+            }
+
             var options = new SessionCreateOptions
             {
                 PaymentMethodTypes = new List<string> { "card" },
@@ -105,23 +130,27 @@ namespace Tixora.Controllers
                     {
                         PriceData = new SessionLineItemPriceDataOptions
                         {
-                            UnitAmount = 1500,
+                            UnitAmount = (long)(booking.TotalAmount * 100),
                             Currency = "usd",
                             ProductData = new SessionLineItemPriceDataProductDataOptions
                             {
-                                Name = "Concert Ticket",
+                                Name = eventDetails.Title,
+                                Description = $"Ticket for {eventDetails.Title}",
                             },
                         },
-                        Quantity = 1,
+                        Quantity = booking.TicketQuantity,
                     },
                 },
                 Mode = "payment",
-                SuccessUrl = "https://localhost:7076/Payment/Success?session_id={CHECKOUT_SESSION_ID}",
-                CancelUrl = "https://localhost:7076/Payment/Cancel",
+                // SuccessUrl = "https://localhost:7076/Payment/Success?session_id={CHECKOUT_SESSION_ID}",
+                //CancelUrl = "https://localhost:7076/Payment/Cancel",
+                SuccessUrl = $"{_config["BaseUrl"]}/Payment/Success?session_id={{CHECKOUT_SESSION_ID}}",
+                CancelUrl = $"{_config["BaseUrl"]}/Payment/Cancel",
                 Metadata = new Dictionary<string, string>
                 {
-                    { "UserId", "123" },
-                    { "Note", "First Stripe Payment" }
+                    { "UserId", booking.UserId },
+                    { "BookingId", bookingId.ToString() }
+
                 }
             };
 
@@ -129,12 +158,29 @@ namespace Tixora.Controllers
             Session session = service.Create(options);
 
             // Redirect the user to Stripe Checkout page
-            return Redirect(session.Url);
+            //return Redirect(session.Url);
+            booking.StripeSessionId = session.Id;
+            await _context.SaveChangesAsync();
+            return Json(new { url = session.Url });
         }
 
-        public ActionResult Success()
+        public async Task<ActionResult> Success(string session_id)
         {
-            return View("Success");
+            var service = new SessionService();
+            var session = await service.GetAsync(session_id);
+
+            if (session.PaymentStatus == "paid")
+            {
+                // Payment was successful
+                // You can retrieve the booking ID from the session metadata
+                var bookingId = session.Metadata["BookingId"];
+                // Update your database or perform any other actions here
+                return Content("✅ Payment successful! Booking ID: " + bookingId);
+            }
+            else
+            {
+                return Content("❌ Payment failed.");
+            }
         }
 
         public ActionResult Cancel()

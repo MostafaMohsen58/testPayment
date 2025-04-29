@@ -1,0 +1,37 @@
+﻿@model List<booking>
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h2>Bookings</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Event</th>
+            <th>Quantity</th>
+            <th>Total Amount</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var booking in Model)
+        {
+            <tr>
+                <td>@booking.EventId</td>
+                <td>@booking.TicketQuantity</td>
+                <td>@booking.TotalAmount.ToString("C")</td>
+                <td>@booking.PaymentStatus</td>
+                <td>
+                    @if (booking.PaymentStatus == "Pending")
+                    {
+                        <a href="@Url.Action("CreateCheckoutSession", "Payment", new { bookingId = booking.Id })"
+                           class="btn btn-primary">Pay Now</a>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<a asp-action="Create" class="btn btn-success">New Booking</a>
+

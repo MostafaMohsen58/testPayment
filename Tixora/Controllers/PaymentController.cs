@@ -120,7 +120,8 @@ namespace Tixora.Controllers
             {
                 return NotFound("Event not found.");
             }
-
+            booking.StripeSessionId = "creating-session";
+            _context.SaveChanges();
             var options = new SessionCreateOptions
             {
                 PaymentMethodTypes = new List<string> { "card" },

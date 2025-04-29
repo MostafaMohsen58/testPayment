@@ -2,6 +2,7 @@ using Stripe;
 using Tixora.Models;
 using Microsoft.EntityFrameworkCore;
 using Tixora.Data;
+using Stripe.BillingPortal;
 
 namespace Tixora
 {
@@ -18,7 +19,8 @@ namespace Tixora
             StripeConfiguration.ApiKey = "sk_test_51OBOHGLO7Fi7FPKNjXAOSdW2yvC9L42N4iMjWU2mFKlN0njhcgVwv7Cf1TmRBpMLNmrWA0etYGpWgNKLAp0yjHXu00dF9ZWKRl";
             // Add services to the container.
             builder.Services.AddControllersWithViews();
-
+            builder.Services.AddScoped<PaymentIntentService>();
+            builder.Services.AddScoped<SessionService>();
             var app = builder.Build();
 
             using (var scope = app.Services.CreateScope())
@@ -40,6 +42,7 @@ namespace Tixora
             app.UseStaticFiles();
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapStaticAssets();

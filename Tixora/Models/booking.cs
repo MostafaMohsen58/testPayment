@@ -9,6 +9,6 @@
         public decimal TotalAmount { get; set; }
         public DateTime BookingDate { get; set; } = DateTime.UtcNow;
         public string PaymentStatus { get; set; } = "Pending"; // Paid, Failed, Refunded
-        public string StripeSessionId { get; set; }
+        public string StripeSessionId { get; set; } = string.Empty;
     }
 }

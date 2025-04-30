@@ -1,0 +1,48 @@
+﻿@{
+    ViewData["Title"] = "Complete Your Payment";
+}
+
+<h1>Complete Payment</h1>
+<div class="payment-info">
+    <p>Booking ID: @ViewBag.BookingId</p>
+    <p>Total Amount: $@ViewBag.TicketPrice</p>
+</div>
+
+<button id="checkout-button" class="btn btn-primary">Pay with Stripe</button>
+
+@section Scripts {
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        const stripe = Stripe('@ViewBag.StripePublishableKey');
+
+        document.getElementById('checkout-button').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/Payment/CreateCheckoutSession?bookingId=@ViewBag.BookingId', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                const session = await response.json();
+
+                if (session.error) {
+                    alert(session.error);
+                    return;
+                }
+
+                // توجيه إلى صفحة الدفع في Stripe
+                const result = await stripe.redirectToCheckout({
+                    sessionId: session.id
+                });
+
+                if (result.error) {
+                    alert(result.error.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            }
+        });
+    </script>
+}

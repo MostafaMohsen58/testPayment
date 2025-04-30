@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Stripe;
 using Stripe.Checkout;
-using Stripe.V2;
-using System.Threading.Tasks;
 using Tixora.Models;
 
 namespace Tixora.Controllers
@@ -107,25 +105,43 @@ namespace Tixora.Controllers
         //        };
 
         //    }
-        [HttpPost]
-        public async Task<ActionResult> CreateCheckoutSession(int bookingId)
+        [HttpGet]
+        public IActionResult StripeCheckout(int bookingId)
         {
             var booking = _context.Bookings.Find(bookingId);
             if (booking == null)
             {
-                return NotFound("Booking not found.");
+                return NotFound();
             }
-            var eventDetails = _context.Events.Find(booking.EventId);
-            if (eventDetails == null)
+            ViewBag.StripePublishableKey = _config["Stripe:PublishableKey"];
+            ViewBag.BookingId = bookingId;
+            ViewBag.TicketPrice = booking.TotalAmount;
+            return View();
+        }
+        [HttpPost("/Payment/CreateCheckoutSession")]
+        public async Task<ActionResult> CreateCheckoutSession(int bookingId)
+        {
+            try
             {
-                return NotFound("Event not found.");
-            }
-            booking.StripeSessionId = "creating-session";
-            _context.SaveChanges();
-            var options = new SessionCreateOptions
-            {
-                PaymentMethodTypes = new List<string> { "card" },
-                LineItems = new List<SessionLineItemOptions>
+
+                var booking = await _context.Bookings.FindAsync(bookingId);
+                if (booking == null)
+                {
+                    return Json(new { error = "Booking not found." });
+                }
+                booking.StripeSessionId = "creating-session";
+                _context.SaveChanges();
+
+                var eventDetails = _context.Events.Find(booking.EventId);
+                if (eventDetails == null)
+                {
+                    return Json(new { error = "Event not found." });
+                }
+
+                var options = new SessionCreateOptions
+                {
+                    PaymentMethodTypes = new List<string> { "card" },
+                    LineItems = new List<SessionLineItemOptions>
                 {
                     new SessionLineItemOptions
                     {
@@ -142,27 +158,32 @@ namespace Tixora.Controllers
                         Quantity = booking.TicketQuantity,
                     },
                 },
-                Mode = "payment",
-                // SuccessUrl = "https://localhost:7076/Payment/Success?session_id={CHECKOUT_SESSION_ID}",
-                //CancelUrl = "https://localhost:7076/Payment/Cancel",
-                SuccessUrl = $"{_config["BaseUrl"]}/Payment/Success?session_id={{CHECKOUT_SESSION_ID}}",
-                CancelUrl = $"{_config["BaseUrl"]}/Payment/Cancel",
-                Metadata = new Dictionary<string, string>
+                    Mode = "payment",
+                    // SuccessUrl = "https://localhost:7076/Payment/Success?session_id={CHECKOUT_SESSION_ID}",
+                    //CancelUrl = "https://localhost:7076/Payment/Cancel",
+                    SuccessUrl = $"{_config["BaseUrl"]}/Payment/Success?session_id={{CHECKOUT_SESSION_ID}}",
+                    CancelUrl = $"{_config["BaseUrl"]}/Payment/Cancel",
+                    Metadata = new Dictionary<string, string>
                 {
-                    { "UserId", booking.UserId },
-                    { "BookingId", bookingId.ToString() }
+                    { "BookingId", booking.Id.ToString() }
 
                 }
-            };
+                };
 
-            var service = new SessionService();
-            Session session = service.Create(options);
+                var service = new SessionService();
+                Session session = service.Create(options);
 
-            // Redirect the user to Stripe Checkout page
-            //return Redirect(session.Url);
-            booking.StripeSessionId = session.Id;
-            await _context.SaveChangesAsync();
-            return Json(new { url = session.Url });
+                // Redirect the user to Stripe Checkout page
+                //return Redirect(session.Url);
+                booking.StripeSessionId = session.Id;
+                booking.PaymentStatus = "pending";
+                await _context.SaveChangesAsync();
+                return Json(new { url = session.Url });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
         }
 
         public async Task<ActionResult> Success(string session_id)

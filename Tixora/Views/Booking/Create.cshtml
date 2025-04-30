@@ -1,0 +1,33 @@
+﻿@model Tixora.Models.booking
+
+@{
+    ViewData["Title"] = "Create Booking";
+}
+
+<h1>Create Booking</h1>
+
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group">
+                <label asp-for="EventId" class="control-label">Event</label>
+                <select asp-for="EventId" class="form-control" asp-items="ViewBag.Events">
+                    <option value="">-- Select Event --</option>
+                </select>
+                <span asp-validation-for="EventId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="TicketQuantity" class="control-label"></label>
+                <input asp-for="TicketQuantity" class="form-control" min="1" />
+                <span asp-validation-for="TicketQuantity" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" asp-controller="Payment" asp-action="StripeCheckout" value="Continue to Payment" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>

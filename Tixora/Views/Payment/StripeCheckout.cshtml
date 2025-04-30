@@ -1,0 +1,37 @@
+﻿@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pay Now</title>
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+    <h2>Buy Ticket - $@ViewBag.TicketPrice</h2>
+    <button id="stripe-pay-btn" data-booking-id="@ViewBag.BookingId">Pay Now</button>
+
+    <script>
+        document.getElementById("stripe-pay-btn").addEventListener("click", async function () {
+            const bookingId = this.getAttribute("data-booking-id");
+
+            const response = await fetch(`/Payment/CreateCheckoutSession?bookingId=${bookingId}`, {
+                method: "POST"
+            });
+
+            try {
+                const result = await response.json();
+
+                if (response.ok && result.url) {
+                    // ✅ Redirect to Stripe Checkout
+                    window.location.href = result.url;
+                } else {
+                    alert("Stripe Error: " + (result.error || "Unknown error"));
+                }
+            } catch (e) {
+                alert("An unexpected error occurred. Please try again.");
+            }
+        });
+    </script>
+</body>
+</html>

@@ -38,7 +38,6 @@ namespace Tixora.Data
                 {
                     new booking
                     {
-                        UserId = "user-1",
                         EventId = 1,
                         TicketQuantity = 2,
                         TotalAmount = 100.00m,
@@ -46,7 +45,6 @@ namespace Tixora.Data
                     },
                     new booking
                     {
-                       UserId = "user-1",
                         EventId = 2,
                         TicketQuantity = 1,
                         TotalAmount = 150.00m,

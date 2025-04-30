@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using Tixora.Models;
 
 namespace Tixora.Controllers
@@ -18,7 +20,11 @@ namespace Tixora.Controllers
         }
         public IActionResult Create()
         {
-            var events = _context.Events.ToList();
+            var events = _context.Events.Select(e => new SelectListItem
+            {
+                Value = e.Id.ToString(),
+                Text = $"{e.Title} (${e.TicketPrice})"
+            }).ToList();
             ViewBag.Events = events;
             return View();
         }
@@ -31,14 +37,38 @@ namespace Tixora.Controllers
                 if (selectedEvent != null)
                 {
                     booking.TotalAmount = selectedEvent.TicketPrice * booking.TicketQuantity;
-                    booking.UserId = "user123";
+                    booking.BookingDate = DateTime.Now;
+                    booking.PaymentStatus = "Pending"; // Initial status
+
                     _context.Bookings.Add(booking);
                     _context.SaveChanges();
-                    return RedirectToAction("Index");
+                    return RedirectToAction("StripeCheckout", new { bookingId = booking.Id });
                 }
             }
-            ViewBag.Events = _context.Events.ToList();
+            ViewBag.Events = _context.Events.Select(e => new SelectListItem
+            {
+                Value = e.Id.ToString(),
+                Text = $"{e.Title} (${e.TicketPrice})"
+            }).ToList();
             return View(booking);
+        }
+
+        [HttpPost]
+        //return RedirectToAction("StripeCheckout", "Payment", new { bookingId = 123 });
+
+        public IActionResult ConfirmBooking(int eventId, int ticketQuantity)
+        {
+            var booking = new booking
+            {
+                EventId = eventId,
+                TicketQuantity = ticketQuantity,
+                TotalAmount = 50 * ticketQuantity
+            };
+
+            _context.Bookings.Add(booking);
+            _context.SaveChanges();
+
+            return RedirectToAction("StripeCheckout", "Payment", new { bookingId = booking.Id });
         }
     }
 }

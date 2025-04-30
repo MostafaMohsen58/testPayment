@@ -1,37 +1,71 @@
-﻿@model List<booking>
+﻿@model IEnumerable<Tixora.Models.booking>
+
 @{
     ViewData["Title"] = "Index";
 }
 
-<h2>Bookings</h2>
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
 <table class="table">
     <thead>
         <tr>
-            <th>Event</th>
-            <th>Quantity</th>
-            <th>Total Amount</th>
-            <th>Status</th>
-            <th>Actions</th>
+            <th>
+                @Html.DisplayNameFor(model => model.Id)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.EventId)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.TicketQuantity)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.TotalAmount)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.BookingDate)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.PaymentStatus)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.StripeSessionId)
+            </th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
-        @foreach (var booking in Model)
-        {
-            <tr>
-                <td>@booking.EventId</td>
-                <td>@booking.TicketQuantity</td>
-                <td>@booking.TotalAmount.ToString("C")</td>
-                <td>@booking.PaymentStatus</td>
-                <td>
-                    @if (booking.PaymentStatus == "Pending")
-                    {
-                        <a href="@Url.Action("CreateCheckoutSession", "Payment", new { bookingId = booking.Id })"
-                           class="btn btn-primary">Pay Now</a>
-                    }
-                </td>
-            </tr>
-        }
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Id)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.EventId)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.TicketQuantity)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.TotalAmount)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.BookingDate)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.PaymentStatus)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.StripeSessionId)
+            </td>
+            <td>
+                @Html.ActionLink("Edit", "Edit", new { /* id=item.PrimaryKey */ }) |
+                @Html.ActionLink("Details", "Details", new { /* id=item.PrimaryKey */ }) |
+                @Html.ActionLink("Delete", "Delete", new { /* id=item.PrimaryKey */ })
+            </td>
+        </tr>
+}
     </tbody>
 </table>
-<a asp-action="Create" class="btn btn-success">New Booking</a>
-
